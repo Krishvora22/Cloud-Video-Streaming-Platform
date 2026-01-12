@@ -59,9 +59,11 @@ app.use('/api/history', historyRouter);
 app.use('/api/watchlist', watchlistRouter);
 app.use('/api/payment', paymentRouter); // Handles checkout (not webhook)
 
-app.listen(port, () => {
-    connectDb();
-    console.log(`Server started on port ${port}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        connectDb();
+        console.log(`Server started on port ${port}`);
+    });
+}
 
 export default app;
