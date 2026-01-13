@@ -57,3 +57,23 @@ export const getMyList = async (req, res) => {
         res.status(500).json({ message: "Server Error", error: error.message });
     }
 };
+
+// Add this new function to your controller file:
+export const checkWatchlistStatus = async (req, res) => {
+    try {
+        const { videoId } = req.params; 
+        const userId = req.user.id;
+
+        const existingItem = await prisma.watchList.findUnique({
+            where: {
+                userId_videoId: { userId, videoId }
+            }
+        });
+
+        // Return true if it exists, false if it doesn't
+        return res.status(200).json({ isInWatchlist: !!existingItem });
+
+    } catch (error) {
+        res.status(500).json({ message: "Server Error", error: error.message });
+    }
+};

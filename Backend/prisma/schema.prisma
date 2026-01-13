@@ -1,11 +1,89 @@
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" 
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String         @id @default(uuid())
+  email              String         @unique
+  password           String
+  role               Role           @default(USER)
+  isVerified         Boolean        @default(false)
+  otpCode            String?
+  otpExpiresAt       DateTime?
+  plan               String         @default("free")
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  currentPeriodEnd   DateTime?
+  currentPeriodStart DateTime?
+  planInterval       String?
+  stripeCustomerId   String?        @unique
+  subscriptionId     String?
+  subscriptionStatus String?
+  trialEndsAt        DateTime?
+  uploadedVideos     Video[]        @relation("Uploader")
+  views              View[]
+  watchHistory       WatchHistory[]
+  watchLists         WatchList[]
+}
+
+model Video {
+  id           String         @id @default(uuid())
+  title        String?        @default("Untitled Video")
+  description  String?
+  thumbnailUrl String?
+  videoUrl     String?
+  duration     Float?
+  views        Int            @default(0)
+  category     String?        @default("General")
+  status       VideoStatus    @default(PENDING)
+  uploaderId   String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  isFeatured   Boolean        @default(false)
+  uploader     User           @relation("Uploader", fields: [uploaderId], references: [id])
+  uniqueViews  View[]
+  history      WatchHistory[]
+  watchLists   WatchList[]
+}
+
+model WatchHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  videoId   String
+  watchedAt DateTime @default(now())
+  duration  Int      @default(0)
+  progress  Int      @default(0)
+  user      User     @relation(fields: [userId], references: [id])
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+}
+
+model View {
+  id        String   @id @default(uuid())
+  userId    String
+  videoId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  video     Video    @relation(fields: [videoId], references: [id])
+
+  @@unique([userId, videoId])
+}
+
+model WatchList {
+  id      String   @id @default(uuid())
+  userId  String
+  videoId String
+  addedAt DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id])
+  video   Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
 }
 
 enum Role {
@@ -14,111 +92,8 @@ enum Role {
 }
 
 enum VideoStatus {
-  PENDING     
-  PROCESSING  
-  COMPLETED   
-  FAILED      
-}
-
-model User {
-  id             String    @id @default(uuid())
-  email          String    @unique
-  password       String
-  role           Role      @default(USER)
-
-  isVerified     Boolean   @default(false)
-  otpCode        String?
-  otpExpiresAt   DateTime?
-
-  stripeCustomerId   String?   @unique 
-  subscriptionId     String?   
-  
-  plan               String    @default("free") 
-  planInterval       String?   
-  
-  subscriptionStatus String?   // "active", "canceled", "past_due"
-  
-  currentPeriodStart DateTime? // When they paid
-  currentPeriodEnd   DateTime? // When it expires
-
-  uploadedVideos Video[]       @relation("Uploader")
-  watchHistory   WatchHistory[]
-  views          View[]
-  watchLists     WatchList[]
-
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-}
-
-
-
-model Video {
-  id            String       @id @default(uuid())
-  
-  title         String?      @default("Untitled Video") 
-  description   String?
-  thumbnailUrl  String?
-
-  videoUrl      String?      
-  
-  duration      Float?       
-  views         Int          @default(0)
-  category      String?      @default("General") 
-
-  status        VideoStatus  @default(PENDING)
-
-  uploaderId    String
-  uploader      User         @relation("Uploader", fields: [uploaderId], references: [id])
-  
-  history       WatchHistory[]
-  uniqueViews   View[]
-  watchLists    WatchList[]
-
-
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-}
-
-
-model WatchHistory {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
-  videoId   String
-  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
-  
-  watchedAt DateTime @default(now())
-
-  progress  Int      @default(0) // How many seconds watched? (e.g., 120s)
-  duration  Int      @default(0) // Total length of video (e.g., 3600s)
-
-  @@unique([userId, videoId]) 
-}
-
-model View {
-  id        String   @id @default(uuid())
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
-  videoId   String
-  video     Video    @relation(fields: [videoId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@unique([userId, videoId])
-}
-
-model WatchList {
-  id        String   @id @default(uuid())
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  
-  videoId   String
-  video   Video @relation(fields: [videoId], references: [id], onDelete: Cascade)  
-  addedAt   DateTime @default(now())
-
-  @@unique([userId, videoId])
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }

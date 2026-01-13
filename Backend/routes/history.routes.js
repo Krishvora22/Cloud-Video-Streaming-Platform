@@ -1,11 +1,11 @@
 import express from 'express';
-import isAuth from '../middlewares/isAuth.js'; // User MUST be logged in
-import {  getUserHistory , updateProgress } from '../controllers/history.controllers.js';
+import isAuth from '../middlewares/isAuth.js';
+import { updateProgress, getVideoHistory , getUserHistory } from '../controllers/history.controllers.js';
 
 const historyRouter = express.Router();
 
-historyRouter.get('/', isAuth, getUserHistory);
-
-historyRouter.post('/progress', isAuth, updateProgress);
+historyRouter.post("/progress", isAuth, updateProgress);
+historyRouter.get("/:videoId", isAuth, getVideoHistory); // The resume route
+historyRouter.get("/", isAuth, getUserHistory);
 
 export default historyRouter;

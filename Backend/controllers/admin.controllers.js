@@ -15,34 +15,40 @@ const s3Client = new S3Client({
 
 export const generateUploadUrl = async (req, res) => {
   try {
-    const { title, extension } = req.body; 
-    const uploaderId = req.user.id; // Comes from isAuth middleware
+    const { title } = req.body;
+    const uploaderId = req.user.id;
 
     const newVideo = await prisma.video.create({
       data: {
         title: title || "Untitled",
-        uploaderId: uploaderId,
-        status: "PENDING"
-      }
+        uploaderId,
+        status: "PENDING",
+      },
     });
 
-    // 2. Generate S3 Key (videos/{UUID}/source.mp4)
     const videoId = newVideo.id;
-    const s3Key = `videos/${videoId}/source.${extension}`;
 
-    // 3. Generate URL
+    // ✅ FIXED KEY (IMPORTANT)
+    const s3Key = `videos/${videoId}/source.mp4`;
+
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: s3Key,
-      ContentType: `video/${extension}`,
+      ContentType: "video/mp4",
     });
 
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    const uploadUrl = await getSignedUrl(s3Client, command, {
+      expiresIn: 3600,
+    });
 
-    res.json({ success: true, uploadUrl, videoId });
+    res.json({
+      success: true,
+      uploadUrl,
+      videoId,
+    });
 
   } catch (error) {
-    console.error(error);
+    console.error("Upload URL Error:", error);
     res.status(500).json({ message: "Upload Error" });
   }
 };

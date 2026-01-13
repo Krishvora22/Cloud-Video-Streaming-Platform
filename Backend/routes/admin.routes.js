@@ -9,7 +9,6 @@ import {
 
 const adminRouter = express.Router();
 
-
 // 1. Generate S3 Presigned URL (The "Start Upload" button)
 // Logic: Creates DB Entry -> Returns S3 URL & VideoID
 adminRouter.post('/upload-url', isAuth, adminAuth, generateUploadUrl);

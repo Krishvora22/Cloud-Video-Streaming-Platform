@@ -5,9 +5,16 @@ import { prisma } from '../config/db.js';
 
 export const getAllVideos = async (req, res) => {
     try {
+        // 1. Extract category from the URL query (e.g., ?category=Action)
+        const { category } = req.query;
+
+        // 2. Build the query object
         const videos = await prisma.video.findMany({
             where: {
-                status: 'COMPLETED'
+                status: 'COMPLETED',
+                // This logic says: "If a category exists in the URL, filter by it. 
+                // If not, just show all completed videos."
+                ...(category ? { category: category } : {})
             },
             include: {
                 uploader: { 
@@ -21,44 +28,50 @@ export const getAllVideos = async (req, res) => {
             take: 20
         });
 
-        res.status(200).json({ success: true, count: videos.length, videos });
+        // 3. Return consistent JSON
+        res.status(200).json({ 
+            success: true, 
+            count: videos.length, 
+            videos 
+        });
+
     } catch (error) {
-        res.status(500).json({ message: "Server Error", error: error.message });
+        console.error("GET_ALL_VIDEOS_ERROR:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Server Error", 
+            error: error.message 
+        });
     }
 };
 
 // 2. Get Single Video (Watch Screen)
 export const getVideoById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user.id;
-
-        const video = await prisma.video.findUnique({
-            where: { id: id },
-            include: { uploader: { select: { email: true } } }
-        });
-
-        if (!video) return res.status(404).json({ message: "Video not found" });
-
-        // Check if user has watched this before
-        const history = await prisma.watchHistory.findUnique({
-            where: {
-                userId_videoId: { userId, videoId: id }
+  try {
+    const video = await prisma.video.findUnique({ 
+        where: { id: req.params.id },
+        include: {
+            uploader: {
+                select: { email: true } // Crucial: This fixes the frontend crash
             }
-        });
+        }
+    });
 
-        // Add 'progress' to the response
-        const videoWithProgress = {
-            ...video,
-            lastPlayedAt: history ? history.progress : 0 // Start at 0 if no history
-        };
-
-
-        res.status(200).json({ success: true, video: videoWithProgress });
-
-    } catch (error) {
-        res.status(500).json({ message: "Server Error", error: error.message });
+    if (!video) {
+        return res.status(404).json({ message: "Video not found" });
     }
+    
+    // Authorization logic: Block if private AND user is not the owner
+    if (video.isPrivate && video.userId !== req.user.id) {
+      console.log(`Blocked: User ${req.user.email} tried to watch private video ${video.title}`);
+      return res.status(403).json({ message: "You do not have permission to watch this" });
+    }
+    
+    res.json({ success: true, video }); // Added success: true for consistency
+  } catch (error) {
+    console.error("SERVER ERROR:", error);
+    res.status(500).json({ message: "Internal server error", error: error.message });
+  }
 };
 // 3. Get Related Videos (Smart Category Logic)
 export const getRelatedVideos = async (req, res) => {
@@ -221,25 +234,89 @@ export const getAllCategories = async (req, res) => {
 };
 
 // 8. Get Random / Featured Video (For Hero Section)
-export const getFeaturedVideo = async (req, res) => {
-    try {
-        // Get total count of completed videos
-        const count = await prisma.video.count({ where: { status: 'COMPLETED' } });
+// export const getFeaturedVideo = async (req, res) => {
+//     try {
+//         // Get total count of completed videos
+//         const count = await prisma.video.count({ where: { status: 'COMPLETED' } });
         
-        if (count === 0) return res.status(404).json({ message: "No videos available" });
+//         if (count === 0) return res.status(404).json({ message: "No videos available" });
 
-        // Get a random number
-        const randomSkip = Math.floor(Math.random() * count);
+//         // Get a random number
+//         const randomSkip = Math.floor(Math.random() * count);
 
-        // Fetch 1 random video
-        const video = await prisma.video.findFirst({
-            where: { status: 'COMPLETED' },
-            skip: randomSkip,
-            include: { uploader: { select: { email: true } } }
-        });
+//         // Fetch 1 random video
+//         const video = await prisma.video.findFirst({
+//             where: { status: 'COMPLETED' },
+//             skip: randomSkip,
+//             include: { uploader: { select: { email: true } } }
+//         });
 
-        res.status(200).json({ success: true, video });
-    } catch (error) {
-        res.status(500).json({ message: "Server Error", error: error.message });
+//         res.status(200).json({ success: true, video });
+//     } catch (error) {
+//         res.status(500).json({ message: "Server Error", error: error.message });
+//     }
+// };
+export const getFeaturedVideo = async (req, res) => {
+  try {
+    const video = await prisma.video.findFirst({
+      where: { status: 'COMPLETED' }, // Ensure we only show finished videos
+      orderBy: { createdAt: 'desc' },
+      include: {
+        uploader: { select: { email: true } }
+      }
+    });
+
+    if (!video) {
+        return res.status(404).json({ message: "No videos found" });
     }
+
+    // Return in a consistent format { success: true, video: ... }
+    res.json({ success: true, video }); 
+
+  } catch (error) {
+    console.error("🔥 CRITICAL ERROR:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+// video.controller.js
+
+export const incrementView = async (req, res) => {
+  try {
+    const { id: videoId } = req.params;
+    const userId = req.user?.id; // Use optional chaining to prevent crash
+
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    // Use a try-catch specifically for the creation to handle race conditions
+    try {
+      await prisma.$transaction([
+        // This will throw an error if the unique constraint (userId_videoId) is violated
+        prisma.view.create({
+          data: {
+            userId: userId,
+            videoId: videoId,
+          },
+        }),
+        prisma.video.update({
+          where: { id: videoId },
+          data: { views: { increment: 1 } },
+        }),
+      ]);
+      return res.status(200).json({ message: "Unique view added" });
+    } catch (prismaError) {
+      // P2002 is Prisma's code for Unique Constraint violation
+      if (prismaError.code === 'P2002') {
+        return res.status(200).json({ message: "View already recorded" });
+      }
+      throw prismaError; // Re-throw if it's a different error
+    }
+
+  } catch (error) {
+    console.error("View Logic Error Details:", error);
+    return res.status(500).json({ error: "Internal server error", details: error.message });
+  }
 };
