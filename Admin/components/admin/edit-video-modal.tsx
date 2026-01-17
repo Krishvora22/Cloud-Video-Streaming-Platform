@@ -38,7 +38,7 @@ export default function EditVideoModal({ video, open, onOpenChange }: EditVideoM
       setSaving(true)
       setError(null)
         const response = await fetch(
-  `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/videos/${video.id}`,
+  `${process.env.NEXT_PUBLIC_API_URL}/videos/${video.id}`,
   {
     method: "PATCH",
     headers: {

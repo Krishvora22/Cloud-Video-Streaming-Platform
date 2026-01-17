@@ -27,7 +27,7 @@ export function HLSPlayer({
   const [showControls, setShowControls] = useState(true)
   const [hasError, setHasError] = useState(false) // FIX: Error state
 
-  const controlsTimeoutRef = useRef<NodeJS.Timeout>()
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasResumedRef = useRef(false)
 
   useEffect(() => {

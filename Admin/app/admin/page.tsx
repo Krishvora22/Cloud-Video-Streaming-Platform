@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     async function fetchStats() {
   try {
     setLoading(true);
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/admin/stats`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/stats`, {
       method: "GET", // Specify method
       headers: {
         "Content-Type": "application/json",

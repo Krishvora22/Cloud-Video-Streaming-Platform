@@ -44,7 +44,7 @@ export default function UploadModal({ open, onOpenChange, onVideoUploaded }: Upl
       setError(null)
 
       // Step 1: Get upload URL
-      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/admin/upload-url`, {
+      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/upload-url`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -67,7 +67,7 @@ export default function UploadModal({ open, onOpenChange, onVideoUploaded }: Upl
       setProgress(75)
 
       // Step 3: Create metadata
-      const metadataResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/admin/videos`, {
+      const metadataResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/videos`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

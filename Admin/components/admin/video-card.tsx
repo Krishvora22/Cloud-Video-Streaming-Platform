@@ -32,7 +32,7 @@ export default function VideoCard({ video, onVideoDeleted }: VideoCardProps) {
 
   try {
     setDeleting(true)
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/videos/${video.id}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/videos/${video.id}`, {
       method: "DELETE",
       headers: {
         // ADD THESE HEADERS

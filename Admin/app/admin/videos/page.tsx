@@ -32,7 +32,7 @@ export default function VideosPage() {
     async function fetchVideos() {
       try {
         setLoading(true)
-        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/videos`)
+        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/videos`)
         if (selectedCategory) url.searchParams.append("category", selectedCategory)
 
         const response = await fetch(url.toString(), {
@@ -57,7 +57,7 @@ export default function VideosPage() {
     // Refetch videos
     if (token) {
       try {
-        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/videos`)
+        const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/videos`)
         if (selectedCategory) url.searchParams.append("category", selectedCategory)
 
         const response = await fetch(url.toString(), {
@@ -75,7 +75,7 @@ export default function VideosPage() {
 
   async function getAllVideos(token: string, selectedCategory: string | undefined): Promise<Video[]> {
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/videos`)
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_URL}/videos`)
       if (selectedCategory) url.searchParams.append("category", selectedCategory)
 
       const response = await fetch(url.toString(), {
