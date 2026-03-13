@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState } from "react"
 import { Play } from "lucide-react"
 
@@ -20,14 +21,18 @@ export function VideoCard({ id, title, thumbnail, views }: VideoCardProps) {
         className="relative group cursor-pointer overflow-hidden rounded-lg bg-secondary aspect-video transition-transform duration-300 flex-shrink-0"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        style={{
-          // FIX: Added background color fallback for consistency
-          backgroundColor: "#1f1f1f",
-          backgroundImage: thumbnail ? `url(${thumbnail})` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
       >
+        {thumbnail ? (
+          <Image
+            src={thumbnail}
+            alt={title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="w-full h-full bg-[#1f1f1f]" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {isHovered && (

@@ -49,43 +49,65 @@ export const createCheckoutSession = async (req, res) => {
 export const verifyPayment = async (req, res) => {
     try {
         const { sessionId } = req.body;
-        console.log("🔍 Verifying Session:", sessionId);
+        console.log("🔍 Verifying Session ID:", sessionId);
 
-        // 1. Retrieve session and expand the subscription
+        // 1. Retrieve session and expand the subscription object
         const session = await stripe.checkout.sessions.retrieve(sessionId, {
             expand: ['subscription'], 
         });
 
-        if (session.payment_status === 'paid') {
+        // Check if payment is paid AND subscription object exists
+        if (session.payment_status === 'paid' && session.subscription) {
             const userId = session.metadata.userId;
             const planType = session.metadata.planType;
+            
+            // This is the full subscription object from Stripe
             const subscription = session.subscription;
 
-            console.log(`💳 Payment Verified for User: ${userId}, Plan: ${planType}`);
+            // DEBUG LOGS: Check your terminal for these!
+            console.log("Stripe Start (Unix):", subscription.current_period_start);
+            console.log("Stripe End (Unix):", subscription.current_period_end);
+
+            // FIX: Convert Unix seconds to Javascript Milliseconds
+            // We use optional chaining and a hard fallback to prevent "Invalid Date"
+            const startDate = subscription.current_period_start 
+                ? new Date(subscription.current_period_start * 1000) 
+                : new Date();
+
+            const endDate = subscription.current_period_end 
+                ? new Date(subscription.current_period_end * 1000) 
+                : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default +30 days if error
+
+            console.log("Converted Start Date:", startDate);
+            console.log("Converted End Date:", endDate);
 
             // 2. Update Database
-            // We use 'update' because we expect the user to already exist
             const updatedUser = await prisma.user.update({
                 where: { id: userId },
                 data: {
-                    stripeCustomerId: session.customer, // Save the ID for future billing
+                    stripeCustomerId: session.customer,
                     plan: 'premium',
                     planInterval: planType,
                     subscriptionStatus: 'active',
                     subscriptionId: subscription.id,
-                    currentPeriodStart: new Date(subscription.current_period_start * 1000),
-                    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+                    currentPeriodStart: startDate, 
+                    currentPeriodEnd: endDate,     
                 }
             });
 
-            console.log("✅ Database successfully updated for:", updatedUser.email);
-            return res.status(200).json({ success: true });
+            console.log("✅ Database updated for user:", updatedUser.id);
+            return res.status(200).json({ success: true, user: updatedUser });
         }
 
-        console.log("❌ Payment status not 'paid':", session.payment_status);
-        res.status(400).json({ message: "Payment was not successful" });
+        console.log("❌ Payment not paid or subscription missing");
+        return res.status(400).json({ message: "Subscription data missing or payment unpaid" });
+
     } catch (error) {
-        console.error("🚨 Verification Error:", error.message);
-        res.status(500).json({ message: "Internal Server Error", error: error.message });
+        // This catch block prevents the server from hanging on a 500 error
+        console.error("🚨 Prisma or Stripe Error:", error.message);
+        return res.status(500).json({ 
+            message: "Internal Server Error", 
+            error: error.message 
+        });
     }
 };

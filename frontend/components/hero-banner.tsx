@@ -26,7 +26,7 @@ export function HeroBanner() {
     const fetchFeatured = async () => {
       try {
         const response = await axiosInstance.get("/videos/featured")
-        
+
         // If your backend returns an array of featured videos, pick one randomly
         // This ensures the "dynamic" feel every time the page loads
         if (Array.isArray(response.data.videos)) {
@@ -51,7 +51,11 @@ export function HeroBanner() {
 
     // Standardize URL - Using the dynamic videoUrl from state
     const sourceUrl = video.videoUrl
-    
+    if (!sourceUrl || typeof sourceUrl !== "string" || sourceUrl.trim() === "") {
+  console.error("Invalid video URL:", sourceUrl)
+  return
+}
+
     if (Hls.isSupported()) {
       // Clean up previous HLS instance if it exists
       if (hlsRef.current) {
@@ -63,11 +67,11 @@ export function HeroBanner() {
           xhr.withCredentials = false;
         }
       })
-      
+
       hlsRef.current = hls
       hls.loadSource(sourceUrl)
       hls.attachMedia(videoElement)
-      
+
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         videoElement.play().catch((err) => console.log("Autoplay blocked:", err))
       })
@@ -75,7 +79,7 @@ export function HeroBanner() {
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) {
           console.error("HLS Error:", data.type);
-          videoElement.style.opacity = "0"; 
+          videoElement.style.opacity = "0";
         }
       })
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, X, LogOut, User, Search, Loader2 } from "lucide-react"
@@ -68,7 +69,7 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-6">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} 
+            <Link key={link.href} href={link.href}
               className={`text-sm font-medium transition-colors ${pathname === link.href ? "text-white" : "text-gray-400 hover:text-white"}`}>
               {link.label}
             </Link>
@@ -90,9 +91,15 @@ export function Navbar() {
           {showDropdown && results.length > 0 && (
             <div className="absolute top-full mt-2 w-full bg-zinc-900 border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
               {results.map((video: any) => (
-                <button key={video.id} onClick={() => router.push(`/watch/${video.id}`)} 
+                <button key={video.id} onClick={() => router.push(`/watch/${video.id}`)}
                   className="w-full flex items-center gap-3 p-3 hover:bg-white/5 text-left border-b border-white/5 last:border-0">
-                  <img src={video.thumbnailUrl} className="w-16 h-9 object-cover rounded" alt="" />
+                  <Image
+                    src={video.thumbnailUrl || "/icon.svg"}
+                    alt={video.title}
+                    width={64}
+                    height={36}
+                    className="rounded object-cover"
+                  />
                   <span className="text-white text-sm font-medium truncate">{video.title}</span>
                 </button>
               ))}

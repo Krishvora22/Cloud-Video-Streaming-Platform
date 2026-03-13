@@ -16,6 +16,11 @@ const s3Client = new S3Client({
 export const generateUploadUrl = async (req, res) => {
   try {
     const { title } = req.body;
+
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const uploaderId = req.user.id;
 
     const newVideo = await prisma.video.create({
@@ -28,7 +33,6 @@ export const generateUploadUrl = async (req, res) => {
 
     const videoId = newVideo.id;
 
-    // ✅ FIXED KEY (IMPORTANT)
     const s3Key = `videos/${videoId}/source.mp4`;
 
     const command = new PutObjectCommand({
@@ -38,7 +42,7 @@ export const generateUploadUrl = async (req, res) => {
     });
 
     const uploadUrl = await getSignedUrl(s3Client, command, {
-      expiresIn: 3600,
+      expiresIn: 36000,
     });
 
     res.json({

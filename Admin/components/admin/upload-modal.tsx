@@ -48,6 +48,7 @@ export default function UploadModal({ open, onOpenChange, onVideoUploaded }: Upl
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         credentials: "include",
         body: JSON.stringify({ title }),
@@ -71,6 +72,7 @@ export default function UploadModal({ open, onOpenChange, onVideoUploaded }: Upl
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         credentials: "include",
         body: JSON.stringify({

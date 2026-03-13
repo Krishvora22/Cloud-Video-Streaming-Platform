@@ -1,13 +1,11 @@
-version: '3.9'
-
 services:
   backend:
     build:
-      context: ./backend
+      context: ./Backend
       dockerfile: Dockerfile
     container_name: stream-backend
     ports:
-      - "5000:5000"  # Local:Container
+      - "5000:5000"
     volumes:
       - video_uploads:/app/uploads
     env_file:
@@ -23,16 +21,18 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:5000
     depends_on:
       - backend
+    restart: always
 
   admin:
-    build: ./admin
+    build: ./Admin
     container_name: stream-admin
     ports:
-      - "3001:3001" # Changed to 3001
+      - "3001:3001"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:5000
     depends_on:
       - backend
+    restart: always
 
 volumes:
   video_uploads:

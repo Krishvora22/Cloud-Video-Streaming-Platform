@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Volume2, VolumeX, Maximize, Play, Pause, AlertCircle } from "lucide-react" // Added AlertCircle
+import Hls from "hls.js"
+import { Volume2, VolumeX, Maximize, Play, Pause, AlertCircle } from "lucide-react"
 
 interface HLSPlayerProps {
   src: string
@@ -18,28 +19,50 @@ export function HLSPlayer({
   poster,
   initialTime = 0,
 }: HLSPlayerProps) {
+
   const videoRef = useRef<HTMLVideoElement>(null)
+  const hlsRef = useRef<Hls | null>(null)
 
   const [isPlaying, setIsPlaying] = useState(autoPlay)
   const [isMuted, setIsMuted] = useState(false)
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [showControls, setShowControls] = useState(true)
-  const [hasError, setHasError] = useState(false) // FIX: Error state
+  const [hasError, setHasError] = useState(false)
+
+  const [qualities, setQualities] = useState<any[]>([])
+  const [currentQuality, setCurrentQuality] = useState(-1)
 
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const hasResumedRef = useRef(false)
 
   useEffect(() => {
+
     const video = videoRef.current
     if (!video) return
 
-    video.src = src
+    setHasError(false)
     hasResumedRef.current = false
-    setHasError(false) // Reset error when src changes
+
+    if (Hls.isSupported()) {
+
+      const hls = new Hls()
+      hls.loadSource(src)
+      hls.attachMedia(video)
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
+        setQualities(data.levels)
+      })
+
+      hlsRef.current = hls
+
+    } else {
+      video.src = src
+    }
 
     const handleLoadedMetadata = () => {
       setDuration(video.duration)
+
       if (initialTime > 0 && !hasResumedRef.current) {
         video.currentTime = initialTime
         hasResumedRef.current = true
@@ -53,80 +76,119 @@ export function HLSPlayer({
       onProgress?.(video.currentTime, video.duration)
     }
 
-    // FIX: Error handler
-    const handleError = () => {
-      setHasError(true)
-    }
+    const handleError = () => setHasError(true)
 
     video.addEventListener("loadedmetadata", handleLoadedMetadata)
     video.addEventListener("timeupdate", handleTimeUpdate)
     video.addEventListener("play", () => setIsPlaying(true))
     video.addEventListener("pause", () => setIsPlaying(false))
-    video.addEventListener("error", handleError) // Listen for playback errors
+    video.addEventListener("error", handleError)
 
     return () => {
+
       video.removeEventListener("loadedmetadata", handleLoadedMetadata)
       video.removeEventListener("timeupdate", handleTimeUpdate)
       video.removeEventListener("error", handleError)
+
+      hlsRef.current?.destroy()
     }
+
   }, [src, initialTime])
 
   /* ================= AUTO HIDE CONTROLS ================= */
+
   useEffect(() => {
+
     if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+
     setShowControls(true)
+
     controlsTimeoutRef.current = setTimeout(() => {
       if (isPlaying) setShowControls(false)
     }, 3000)
+
     return () => clearTimeout(controlsTimeoutRef.current)
+
   }, [isPlaying])
 
-  const togglePlay = () => {
-    const video = videoRef.current
-    if (!video || hasError) return
-    isPlaying ? video.pause() : video.play()
+  const togglePlay = async () => {
+  const video = videoRef.current
+  if (!video || hasError) return
+
+  try {
+    if (isPlaying) {
+      video.pause()
+    } else {
+      await video.play()
+    }
+  } catch (err) {
+    console.warn("Play interrupted", err)
   }
+}
 
   const toggleMute = () => {
+
     const video = videoRef.current
     if (!video) return
+
     video.muted = !isMuted
     setIsMuted(!isMuted)
+
   }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+
     const video = videoRef.current
     if (!video || !duration) return
+
     video.currentTime = (Number(e.target.value) / 100) * duration
+
   }
 
   const handleFullscreen = () => {
     videoRef.current?.requestFullscreen()
   }
 
+  const changeQuality = (level: number) => {
+
+    if (!hlsRef.current) return
+
+    hlsRef.current.currentLevel = level
+    setCurrentQuality(level)
+
+  }
+
   const formatTime = (time: number) => {
+
     if (!time || isNaN(time)) return "0:00"
+
     const m = Math.floor(time / 60)
     const s = Math.floor(time % 60)
+
     return `${m}:${s.toString().padStart(2, "0")}`
+
   }
 
   return (
+
     <div
       className="relative w-full h-full aspect-video bg-black overflow-hidden group"
       onMouseMove={() => setShowControls(true)}
       onMouseLeave={() => isPlaying && setShowControls(false)}
     >
-      {/* FIX: Error Boundary UI */}
+
       {hasError ? (
+
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900 text-center px-6">
           <AlertCircle className="w-16 h-16 text-destructive mb-4" />
           <h2 className="text-xl font-bold text-white">Video Unavailable</h2>
           <p className="text-muted-foreground mt-2 max-w-sm">
-            We're having trouble loading this video. Please check your connection or try again later.
+            We're having trouble loading this video.
           </p>
         </div>
+
       ) : (
+
         <>
           <video
             ref={videoRef}
@@ -142,6 +204,7 @@ export function HLSPlayer({
               showControls ? "opacity-100" : "opacity-0"
             }`}
           >
+
             <input
               type="range"
               min="0"
@@ -152,24 +215,55 @@ export function HLSPlayer({
             />
 
             <div className="flex items-center justify-between text-white">
+
               <div className="flex items-center gap-4">
+
                 <button onClick={togglePlay}>
                   {isPlaying ? <Pause /> : <Play className="fill-white" />}
                 </button>
+
                 <button onClick={toggleMute}>
                   {isMuted ? <VolumeX /> : <Volume2 />}
                 </button>
+
                 <span className="text-sm font-mono">
                   {formatTime(videoRef.current?.currentTime || 0)} / {formatTime(duration)}
                 </span>
+
               </div>
-              <button onClick={handleFullscreen}>
-                <Maximize />
-              </button>
+
+              {/* QUALITY SELECTOR */}
+
+              <div className="flex items-center gap-3">
+
+                <select
+                  value={currentQuality}
+                  onChange={(e) => changeQuality(Number(e.target.value))}
+                  className="bg-black text-white text-sm px-2 py-1 rounded"
+                >
+
+                  <option value={-1}>Auto</option>
+
+                  {qualities.map((q, i) => (
+                    <option key={i} value={i}>
+                      {q.height}p
+                    </option>
+                  ))}
+
+                </select>
+
+                <button onClick={handleFullscreen}>
+                  <Maximize />
+                </button>
+
+              </div>
+
             </div>
+
           </div>
 
           {!isPlaying && (
+
             <button
               onClick={togglePlay}
               className="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/40 transition"
@@ -178,9 +272,13 @@ export function HLSPlayer({
                 <Play className="w-12 h-12 text-white fill-white" />
               </div>
             </button>
+
           )}
+
         </>
+
       )}
+
     </div>
   )
 }

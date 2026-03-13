@@ -4,8 +4,15 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
+  compress: true,
+  poweredByHeader: false,
 }
 
 export default nextConfig
