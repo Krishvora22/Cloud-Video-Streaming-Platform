@@ -11,38 +11,39 @@ The platform is designed with **performance, scalability, and user experience** 
 
 ---
 
-# Key Features
+# 🚀 Key Features
 
-### Adaptive Video Streaming
+### 1️⃣ 🎥 Adaptive Video Streaming
 StreamFlix uses **HLS (HTTP Live Streaming)** to automatically adjust video quality based on network conditions.  
 If the user's internet speed drops, the video quality lowers automatically to prevent buffering, and increases again when the connection improves.
 
-### Smooth Playback Experience
-The player is optimized to ensure **low latency playback** with minimal buffering. The streaming pipeline processes videos into multiple resolutions so that users always receive the best possible quality.
+### 2️⃣ ⚡ Smooth Playback Experience
+The player is optimized to ensure **low latency playback** with minimal buffering.  
+Videos are processed into multiple resolutions so users always receive the best possible streaming quality.
 
-### Secure Authentication
+### 3️⃣ 🔐 Secure Authentication
 Users can securely create accounts and log in using **JWT-based authentication**, ensuring protected access to the platform.
 
-### Video Library
-The platform displays a collection of videos organized into **scrollable rows**, similar to modern streaming platforms. Users can easily browse through available content.
+### 4️⃣ 📚 Video Library
+The platform displays a collection of videos organized into **scrollable rows**, similar to modern streaming platforms, making browsing easy and intuitive.
 
-### Featured Content
+### 5️⃣ ⭐ Featured Content
 A **hero banner section** highlights a featured video on the home page, improving content discovery and engagement.
 
-### Personal Watch History
+### 6️⃣ 🕒 Personal Watch History
 The system tracks user viewing progress, allowing users to **resume videos from where they left off**.
 
-### Watchlist Management
-Users can add videos to their **personal watchlist** to view later, providing a personalized viewing experience.
+### 7️⃣ 📌 Watchlist Management
+Users can add videos to their **personal watchlist** so they can easily find and watch them later.
 
-### Subscription Plans
-The platform includes **multiple subscription plans** with integrated payment processing, enabling users to choose a plan and access premium content.
+### 8️⃣ 💳 Subscription Plans
+The platform includes **multiple subscription plans** with integrated payment processing.
 
-### Responsive User Interface
+### 9️⃣ 📱 Responsive User Interface
 The application is built with a **mobile-first responsive design**, ensuring smooth usability across desktops, tablets, and smartphones.
 
-### Modern Streaming UI
-The interface follows a **Netflix-inspired dark theme**, providing a visually appealing and immersive viewing experience.
+### 🔟 🎨 Modern Streaming UI
+The interface follows a **Netflix-inspired dark theme**, creating a visually immersive streaming experience.
 
 ---
 
