@@ -49,4 +49,7 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
+app.get('/', (req, res) => {
+    res.send('Welcome to the Video Streaming Platform API');
+});
 export default app;
