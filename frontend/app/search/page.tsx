@@ -4,10 +4,11 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Navbar } from "@/components/navbar"
 import { VideoCard } from "@/components/video-card"
+import { PageTransition } from "@/components/page-transition"
 import { Loader2, SearchX } from "lucide-react"
+import { motion } from "framer-motion"
 import axiosInstance from "@/lib/axios"
 
-// Separate component to handle the search logic within Suspense
 function SearchResults() {
   const searchParams = useSearchParams()
   const query = searchParams.get("q") || ""
@@ -16,7 +17,6 @@ function SearchResults() {
 
   useEffect(() => {
     const fetchSearchResults = async () => {
-      // If no query exists, stop loading and show empty results
       if (!query.trim()) {
         setResults([])
         setLoading(false)
@@ -25,9 +25,7 @@ function SearchResults() {
 
       setLoading(true)
       try {
-        // Fetch results from your backend search endpoint
         const res = await axiosInstance.get(`/videos/search?query=${encodeURIComponent(query)}`)
-        
         if (res.data.success) {
           setResults(res.data.videos)
         } else {
@@ -47,75 +45,106 @@ function SearchResults() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <h2 className="text-xl font-medium text-foreground">Searching StreamFlix...</h2>
-        <p className="text-muted-foreground italic">Looking for "{query}"</p>
+        <div className="relative">
+          <div className="absolute inset-0 bg-red-600/20 rounded-full blur-xl animate-pulse" />
+          <Loader2 className="w-12 h-12 animate-spin text-red-500 relative" />
+        </div>
+        <h2 className="text-xl font-medium text-white">Searching StreamFlix...</h2>
+        <p className="text-gray-500 italic">Looking for &quot;{query}&quot;</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Header section showing the query results count */}
-      <div className="border-b border-white/10 pb-4">
-        <h1 className="text-3xl font-bold text-foreground">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="border-b border-white/[0.06] pb-4"
+      >
+        <h1 className="text-2xl md:text-3xl font-bold text-white">
           {results.length > 0 ? (
             <>
-              Found {results.length} results for <span className="text-primary">"{query}"</span>
+              Found {results.length} results for <span className="text-red-500">&quot;{query}&quot;</span>
             </>
           ) : (
-            <>Search results for <span className="text-primary">"{query}"</span></>
+            <>Search results for <span className="text-red-500">&quot;{query}&quot;</span></>
           )}
         </h1>
-      </div>
+      </motion.div>
 
-      {/* Grid display for video results */}
+      {/* Results grid */}
       {results.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 gap-y-10">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { staggerChildren: 0.05 },
+            },
+          }}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 gap-y-8"
+        >
           {results.map((video: any) => (
-            <VideoCard
+            <motion.div
               key={video.id}
-              id={video.id}
-              title={video.title}
-              thumbnail={video.thumbnailUrl}
-              views={video.views}
-            />
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0 },
+              }}
+            >
+              <VideoCard
+                id={video.id}
+                title={video.title}
+                thumbnail={video.thumbnailUrl}
+                views={video.views}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       ) : (
-        // Enhanced Empty State UI
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-secondary/10 rounded-3xl border border-dashed border-white/10">
-          <div className="bg-secondary p-6 rounded-full mb-6">
-            <SearchX className="w-16 h-16 text-muted-foreground" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          className="flex flex-col items-center justify-center py-28 text-center"
+        >
+          <div className="w-24 h-24 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mb-6">
+            <SearchX className="w-12 h-12 text-gray-600" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">No results found</h2>
-          <p className="text-muted-foreground max-w-md mx-auto">
-            We couldn't find any movies or shows matching "{query}". 
-            Try checking for typos or searching for a broader term like "Action" or "Marvel".
+          <h2 className="text-2xl font-bold text-white mb-3">No results found</h2>
+          <p className="text-gray-500 max-w-md mx-auto leading-relaxed">
+            We couldn&apos;t find any movies or shows matching &quot;{query}&quot;.
+            Try checking for typos or searching for a broader term.
           </p>
-        </div>
+        </motion.div>
       )}
     </div>
   )
 }
 
-// Main Page Component
 export default function SearchPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
-      {/* Main content area with top padding for fixed Navbar */}
-      <main className="pt-28 px-4 md:px-8 lg:px-12 max-w-[1600px] mx-auto">
-        {/* Suspense is mandatory when using useSearchParams in Next.js App Router */}
-        <Suspense fallback={
-          <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <Loader2 className="w-12 h-12 animate-spin text-primary" />
-          </div>
-        }>
-          <SearchResults />
-        </Suspense>
-      </main>
+
+      <PageTransition>
+        <main className="pt-24 px-4 md:px-8 lg:px-12 max-w-[1600px] mx-auto">
+          <Suspense
+            fallback={
+              <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                <Loader2 className="w-12 h-12 animate-spin text-red-500" />
+              </div>
+            }
+          >
+            <SearchResults />
+          </Suspense>
+        </main>
+      </PageTransition>
     </div>
   )
 }

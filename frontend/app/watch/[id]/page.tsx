@@ -6,7 +6,9 @@ import { Navbar } from "@/components/navbar"
 import { HLSPlayer } from "@/components/hls-player"
 import { VideoRow } from "@/components/video-row"
 import { Button } from "@/components/ui/button"
-import { Heart } from "lucide-react"
+import { PageTransition } from "@/components/page-transition"
+import { Heart, Eye, Tag } from "lucide-react"
+import { motion } from "framer-motion"
 import axiosInstance from "@/lib/axios"
 
 interface Video {
@@ -32,35 +34,30 @@ export default function WatchPage() {
   const [isInWatchlist, setIsInWatchlist] = useState(false)
   const [startTime, setStartTime] = useState(0)
 
-  // Refs for logic that shouldn't trigger re-renders
   const lastUpdatedTimeRef = useRef<number>(0)
   const hasIncrementedViewRef = useRef<boolean>(false)
 
   useEffect(() => {
     const fetchAllData = async () => {
-      if (!videoId) return;
-      
+      if (!videoId) return
+
       try {
         setLoading(true)
-        // Reset the view trigger ref when the video ID changes
-        hasIncrementedViewRef.current = false;
+        hasIncrementedViewRef.current = false
 
-        // 1. Fetch data in parallel
-        // Note: View increment is REMOVED from here to prevent counting on simple page refresh
         const [videoRes, historyRes, watchlistRes] = await Promise.all([
           axiosInstance.get(`/videos/${videoId}`),
           axiosInstance.get(`/history/${videoId}`).catch(() => ({ data: null })),
-          axiosInstance.get(`/watchlist/check/${videoId}`).catch(() => ({ data: { isInWatchlist: false } }))
+          axiosInstance.get(`/watchlist/check/${videoId}`).catch(() => ({ data: { isInWatchlist: false } })),
         ])
 
         setVideo(videoRes.data.video)
-        
+
         if (historyRes.data?.progress) {
           setStartTime(historyRes.data.progress)
         }
 
         setIsInWatchlist(watchlistRes.data.isInWatchlist)
-
       } catch (err) {
         console.error("Error loading video data:", err)
       } finally {
@@ -73,39 +70,34 @@ export default function WatchPage() {
 
   const handleWatchlistToggle = async () => {
     try {
-      const previousState = isInWatchlist;
-      setIsInWatchlist(!previousState);
-      await axiosInstance.post(`/watchlist`, { videoId });
+      const previousState = isInWatchlist
+      setIsInWatchlist(!previousState)
+      await axiosInstance.post(`/watchlist`, { videoId })
     } catch (err) {
-      console.error("Failed to toggle watchlist:", err);
-      // Revert UI state if API fails
-      setIsInWatchlist((prev) => !prev);
+      console.error("Failed to toggle watchlist:", err)
+      setIsInWatchlist((prev) => !prev)
     }
   }
 
   const handleProgress = (progress: number, duration: number) => {
     const currentTime = Date.now()
 
-    // --- LOGIC: PER USER ONE VIEW COUNT ---
-    // Trigger only once per video session when user hits 30 seconds of playback
     if (!hasIncrementedViewRef.current && progress >= 30) {
-      hasIncrementedViewRef.current = true;
-      
-      // Backend should check userId + videoId to ensure truly only one view ever
+      hasIncrementedViewRef.current = true
       axiosInstance.post(`/videos/${videoId}/view`).catch((err) => {
-        console.log("View record skipped or already exists", err);
-      });
+        console.log("View record skipped or already exists", err)
+      })
     }
 
-    // --- LOGIC: SYNC WATCH HISTORY ---
-    // Update progress in database every 10 seconds to avoid server overload
     if (currentTime - lastUpdatedTimeRef.current > 10000) {
       lastUpdatedTimeRef.current = currentTime
-      axiosInstance.post("/history/progress", {
-        videoId,
-        progress: Math.floor(progress),
-        duration: Math.floor(duration),
-      }).catch(err => console.error("Failed to update history:", err))
+      axiosInstance
+        .post("/history/progress", {
+          videoId,
+          progress: Math.floor(progress),
+          duration: Math.floor(duration),
+        })
+        .catch((err) => console.error("Failed to update history:", err))
     }
   }
 
@@ -113,8 +105,12 @@ export default function WatchPage() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="pt-20 px-6">
-          <div className="aspect-video bg-neutral-900 animate-pulse rounded-lg" />
+        <div className="pt-20 px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto space-y-6">
+          <div className="aspect-video skeleton-shimmer rounded-2xl" />
+          <div className="space-y-3">
+            <div className="h-8 w-96 skeleton-shimmer rounded-lg" />
+            <div className="h-4 w-64 skeleton-shimmer rounded-lg" />
+          </div>
         </div>
       </div>
     )
@@ -124,7 +120,7 @@ export default function WatchPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Navbar />
-        <h1 className="text-xl font-bold">Video not found</h1>
+        <h1 className="text-xl font-bold text-white">Video not found</h1>
       </div>
     )
   }
@@ -133,57 +129,80 @@ export default function WatchPage() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="pt-20 px-4 md:px-8 lg:px-12 space-y-8">
-        {/* Main Player Container */}
-        <div className="relative w-full aspect-video max-h-[70vh] bg-black rounded-lg overflow-hidden border border-white/5 shadow-2xl">
-          <HLSPlayer
-            src={video.videoUrl}
-            poster={video.thumbnailUrl || undefined}
-            onProgress={handleProgress}
-            initialTime={startTime}
-          />
-        </div>
+      <PageTransition>
+        <div className="pt-20 px-4 md:px-8 lg:px-12 max-w-[1400px] mx-auto space-y-8 pb-16">
+          {/* Player */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="relative w-full aspect-video max-h-[75vh] bg-black rounded-2xl overflow-hidden border border-white/[0.06] shadow-2xl shadow-black/50"
+          >
+            <HLSPlayer
+              src={video.videoUrl}
+              poster={video.thumbnailUrl || undefined}
+              onProgress={handleProgress}
+              initialTime={startTime}
+            />
+          </motion.div>
 
-        {/* Video Information */}
-        <div className="space-y-4">
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{video.title}</h1>
-              <div className="flex items-center gap-3 mt-2 text-muted-foreground">
-                <span>{video.views.toLocaleString()} views</span>
-                <div className="w-1 h-1 rounded-full bg-neutral-600" />
-                <span className="px-3 py-1 text-xs font-medium bg-neutral-800 text-white rounded-full">
-                  {video.category}
-                </span>
+          {/* Video info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="space-y-6"
+          >
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">{video.title}</h1>
+                <div className="flex items-center gap-4 mt-3 text-gray-400">
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Eye className="w-4 h-4" />
+                    {video.views.toLocaleString()} views
+                  </span>
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Tag className="w-4 h-4" />
+                    <span className="px-3 py-1 text-xs font-medium bg-white/5 text-gray-300 rounded-full border border-white/10">
+                      {video.category}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <Button
+                  variant={isInWatchlist ? "secondary" : "outline"}
+                  onClick={handleWatchlistToggle}
+                  className={`gap-2 rounded-xl transition-all duration-300 ${
+                    isInWatchlist
+                      ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20"
+                      : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                  }`}
+                >
+                  <Heart
+                    className={`w-4 h-4 transition-all duration-300 ${
+                      isInWatchlist ? "fill-red-500 stroke-red-500 scale-110" : ""
+                    }`}
+                  />
+                  {isInWatchlist ? "In My List" : "Add to List"}
+                </Button>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button
-                variant={isInWatchlist ? "secondary" : "outline"}
-                onClick={handleWatchlistToggle}
-                className={`gap-2 transition-all duration-300 ${
-                  isInWatchlist ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20" : ""
-                }`}
-              >
-                <Heart
-                  className={`w-4 h-4 transition-colors ${isInWatchlist ? "fill-red-500 stroke-red-500" : ""}`}
-                />
-                {isInWatchlist ? "In List" : "Add to List"}
-              </Button>
+            {/* Description */}
+            <div className="glass-card rounded-2xl p-6">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">About</h2>
+              <p className="text-gray-300 leading-relaxed">{video.description}</p>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Video Description */}
-          <div className="bg-neutral-900/50 p-6 rounded-xl border border-white/5">
-            <h2 className="text-lg font-semibold mb-2">About</h2>
-            <p className="text-muted-foreground leading-relaxed">{video.description}</p>
+          {/* Related */}
+          <div className="pt-4">
+            <VideoRow title="Related Videos" endpoint={`/videos/${videoId}/related`} />
           </div>
         </div>
-
-        {/* Recommendations */}
-        <VideoRow title="Related Videos" endpoint={`/videos/${videoId}/related`} />
-      </div>
+      </PageTransition>
     </div>
   )
 }

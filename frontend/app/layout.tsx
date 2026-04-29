@@ -4,21 +4,22 @@ import { Inter } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+})
 
-// ✅ Corrected Metadata
 export const metadata: Metadata = {
   title: "StreamFlix - Watch Premium Videos",
-  description: "Stream your favorite videos with premium quality.",
+  description: "Stream your favorite videos with premium quality on StreamFlix. Unlimited movies and TV shows.",
   generator: "v0.app",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: "/apple-icon.png",
   },
-  // REMOVED viewport from here
 }
 
-// ✅ Corrected Viewport Export
 export const viewport = {
   width: "device-width",
   initialScale: 1,
@@ -31,8 +32,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className={`${inter.className} font-sans antialiased bg-background text-foreground`}>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body
+        className={`${inter.className} font-sans antialiased bg-background text-foreground selection:bg-red-600/30 selection:text-white`}
+      >
         {children}
         <Analytics />
       </body>

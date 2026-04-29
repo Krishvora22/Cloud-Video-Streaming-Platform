@@ -1,4 +1,5 @@
 import axios from "axios"
+import Cookies from "js-cookie"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ;
 
@@ -26,13 +27,15 @@ axiosInstance.interceptors.request.use(
   },
 )
 
+
 // Handle token expiry and errors globally
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem("token")
-      window.location.href = "/login"
+      Cookies.remove("token", { path: '/' })
+      window.location.href = "/"
     }
     return Promise.reject(error)
   },

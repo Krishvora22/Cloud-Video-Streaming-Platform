@@ -10,13 +10,9 @@ export function proxy(request: NextRequest) {
   const isPathProtected = protectedPaths.some(path => pathname.startsWith(path))
 
   if (isPathProtected && !token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
-  const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/'
-  if (isAuthPage && token) {
-    return NextResponse.redirect(new URL('/home', request.url))
-  }
 
   return NextResponse.next()
 }

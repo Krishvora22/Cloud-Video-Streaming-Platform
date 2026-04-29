@@ -107,7 +107,9 @@ export function HLSPlayer({
       if (isPlaying) setShowControls(false)
     }, 3000)
 
-    return () => clearTimeout(controlsTimeoutRef.current)
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current)
+    }
 
   }, [isPlaying])
 

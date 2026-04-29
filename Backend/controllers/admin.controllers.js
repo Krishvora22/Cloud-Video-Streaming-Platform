@@ -15,7 +15,7 @@ const s3Client = new S3Client({
 
 export const generateUploadUrl = async (req, res) => {
   try {
-    const { title } = req.body;
+    const { title , fileBuffer} = req.body;
 
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -38,6 +38,7 @@ export const generateUploadUrl = async (req, res) => {
     const command = new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: s3Key,
+      Body: fileBuffer,
       ContentType: "video/mp4",
     });
 
