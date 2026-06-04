@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar"
 import { HLSPlayer } from "@/components/hls-player"
 import { VideoRow } from "@/components/video-row"
 import { Button } from "@/components/ui/button"
+import { ShareModal } from "@/components/share-modal"
 import { PageTransition } from "@/components/page-transition"
 import { Heart, Eye, Tag } from "lucide-react"
 import { motion } from "framer-motion"
@@ -187,6 +188,7 @@ export default function WatchPage() {
                   />
                   {isInWatchlist ? "In My List" : "Add to List"}
                 </Button>
+                <ShareModal videoId={videoId} />
               </div>
             </div>
 
